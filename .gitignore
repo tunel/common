@@ -1,0 +1,32 @@
+# aututools specific generated files/dirs
+build/aux/
+build/m4/
+.deps/
+.libs/
+autom4te.cache/
+aclocal.m4
+configure
+libtool
+Makefile
+Makefile.in
+config.*
+/stamp-*
+*.stamp
+
+# may be removed if some .m4 or .make became manually generated
+*.make
+
+# generated files suffixes
+*.o
+*.a
+*.lo
+*.la
+*.so
+
+*~
+
+# .pc file is generated from .in
+/tlcommon.pc
+
+# blbl
+/stats.log
