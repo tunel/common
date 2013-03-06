@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
     Tune Land - Sandbox RPG
-    Copyright (C) 2012-2012
+    Copyright (C) 2012-2013
         Antony Martin <antony(dot)martin(at)scengine(dot)org>
 
     This program is free software: you can redistribute it and/or modify
@@ -293,11 +293,14 @@ NetServer_NetClientTCPStep (NetServer *server, NetClient *client,
         break;
     default:
         cmd = locatecmd (&server->tcp_cmds, id);
-        if (!cmd) {
-            NetServer_CallCmd (&server->tcp_unknowncmd, server, client,
-                               data, size);
-        } else
+        if (cmd) {
             NetServer_CallCmd (cmd, server, client, data, size);
+        } else {
+            unsigned char buf[4] = {0};
+            SCE_Encode_Long (id, buf);
+            NetServer_CallCmd (&server->tcp_unknowncmd, server, client,
+                               buf, size);
+        }
     }
 
     /* check ping timeout */ 
@@ -315,10 +318,13 @@ static void NetServer_TreatUDPPacket (NetServer *server, NetClient *client,
     client->tm = time (NULL);
     cmd = locatecmd (&server->udp_cmds, id);
     if (!cmd) {
-        NetServer_CallCmd (&server->udp_unknowncmd, server, client,
-                           data, size);
-    } else
         NetServer_CallCmd (cmd, server, client, &data[3 * SOCKET_ID_SIZE],size);
+    } else {
+        unsigned char buf[4] = {0};
+        SCE_Encode_Long (id, buf);
+        NetServer_CallCmd (&server->udp_unknowncmd, server, client,
+                           buf, size);
+    }
 }
 
 static void NetServer_UDPStep (NetServer *server, SockID id, const char *data,
