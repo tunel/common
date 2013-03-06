@@ -662,6 +662,7 @@ long NetClient_WaitTCPPacket (NetClient *client, SockID id, time_t delay)
     SockID id_;
     unsigned int count = 0;
 
+    id_ = id + 1;
     current = start = time (NULL);
 
     while (current - start < delay) {
