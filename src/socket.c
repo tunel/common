@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
     Tune Land - Sandbox RPG
-    Copyright (C) 2012-2012
+    Copyright (C) 2012-2013
         Antony Martin <antony(dot)martin(at)scengine(dot)org>
 
     This program is free software: you can redistribute it and/or modify
@@ -254,19 +254,11 @@ char* Socket_GetAddressStringFromSockAddr (SOCKADDR_IN *addr)
 
 SockID Socket_GetID (const char *data)
 {
-    SockID id;
-    id  =  (unsigned char)data[0];
-    id |= ((unsigned char)data[1] << 8);
-    id |= ((unsigned char)data[2] << 16);
-    id |= ((unsigned char)data[3] << 24);
-    return id;
+    return SCE_Decode_Long ((const unsigned char*)data);
 }
 void Socket_SetID (char *data, SockID id)
 {
-    data[0] = 0xFF & (unsigned char)id;
-    data[1] = 0xFF & (unsigned char)(id >> 8);
-    data[2] = 0xFF & (unsigned char)(id >> 16);
-    data[3] = 0xFF & (unsigned char)(id >> 24);
+    SCE_Encode_Long (id, (unsigned char*)data);
 }
 
 
