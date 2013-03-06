@@ -36,6 +36,20 @@ enum TlpCommand {
     TLP_CONNECT_REFUSED,
     TLP_DISCONNECT,
 
+    /* terrain commands */
+    TLP_CHUNK_SIZE,
+    TLP_NUM_LOD,
+
+    TLP_REGISTER_REGION,
+    TLP_UNREGISTER_REGION,
+
+    TLP_QUERY_OCTREE,
+    TLP_QUERY_CHUNK,
+    TLP_NO_OCTREE,
+    TLP_NO_CHUNK,
+
+    TLP_AREA_MODIFIED,
+
     /* chat commands */
     TLP_CHAT_MSG,
 
