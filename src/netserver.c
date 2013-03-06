@@ -471,12 +471,15 @@ static int NetServer_ReceiveTCP (NetServer *server, NetClient *client)
     case SCE_ERROR:
         SCEE_LogSrc(), SCEE_Out ();
         SCEE_Clear ();
-        break;
+        /* kick client */
     case NETWORK_DISCONNECTED:
-        /* no need to close sockets, NetClient_Free() will ensure that */
+        /* no need to close sockets, NetClient_Free() will ensure that,
+           see TreatSelected() */
         NetServer_CallCmd (&server->discocmd, server, client, NULL, 0);
         client->connected = SCE_FALSE;
     case NETWORK_TIMEOUT:
+        /* I'm not sure but I feel like Socket_ReceiveTCP() cannot
+           return NETWORK_TIMEOUT. */
         r = SCE_OK;
         break;
     }
