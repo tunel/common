@@ -434,9 +434,9 @@ const void* Socket_GetPacket (const Sock *sock, SockID *id, size_t *size)
         buf = SCE_Array_Get (&sock->stream);
         s = Socket_GetID (buf);
         if (ssize >= (size_t)s) {
-            *size = (size_t)s - SOCKET_ID_SIZE;
+            *size = (size_t)s - 2 * SOCKET_ID_SIZE;
             *id = Socket_GetID (&buf[SOCKET_ID_SIZE]);
-            return &buf[SOCKET_ID_SIZE];
+            return &buf[2 * SOCKET_ID_SIZE];
         }
     }
 
@@ -450,7 +450,7 @@ int Socket_PopPacket (Sock *sock)
     SockID id;
 
     if ((data = Socket_GetPacket (sock, &id, &size))) {
-        if (SCE_Array_Pop (&sock->stream, size + SOCKET_ID_SIZE) < 0) {
+        if (SCE_Array_PopFront (&sock->stream, size + 2 * SOCKET_ID_SIZE) < 0) {
             SCEE_LogSrc ();
             return SCE_ERROR;
         }
