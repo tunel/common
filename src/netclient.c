@@ -329,8 +329,8 @@ static int NetClient_ReceiveConnectionData (NetClient *client)
     data = Socket_GetPacket (&client->tcpsock, &id, &size);
     if (data) {
         if (id == NETCLIENT_CONNECTION_DATA) {
-            client->timeout = Socket_GetID (&data[SOCKET_ID_SIZE]);
-            client->udp_id = (int)Socket_GetID (&data[2 * SOCKET_ID_SIZE]);
+            client->timeout = Socket_GetID (data);
+            client->udp_id = (int)Socket_GetID (&data[SOCKET_ID_SIZE]);
             Socket_PopPacket (&client->tcpsock);
         } else {
             SCEE_Log (43);
@@ -523,10 +523,15 @@ static void NetClient_TreatTCPPacket (NetClient *client, SockID id,
         break;
     default:
         cmd = locatecmd (&client->tcp_cmds, id);
-        if (cmd)
+        if (cmd) {
             NetClient_CallCmd (cmd, client, data, size);
-        else
-            NetClient_CallCmd (&client->tcp_unknowncmd, client, data, size);
+        } else {
+            unsigned char buf[4] = {0};
+            SCE_Encode_Long (id, buf);
+            /* NOTE: well we dont have any access to the data in the
+               callback but who cares. */
+            NetClient_CallCmd (&client->tcp_unknowncmd, client, buf, size);
+        }
     }
 }
 
@@ -595,7 +600,7 @@ int NetClient_TCPStep (NetClient *client, SockID *id)
         /* it does like NetClient_Disconnect(), except that this function
            waits for TCPLoop() thread to finish */
         NetClient_DisconnectSockets (client);
-        NetClient_CallCmd (&client->discocmd, client, data, size);
+        NetClient_CallCmd (&client->discocmd, client, NULL, 0);
         client->listening = SCE_FALSE;
         r = SCE_OK;
     } else if (r == NETWORK_TIMEOUT) {
@@ -604,6 +609,7 @@ int NetClient_TCPStep (NetClient *client, SockID *id)
         data = Socket_GetPacket (&client->tcpsock, id, &size);
         if (data) {
             NetClient_TreatTCPPacket (client, *id, data, size);
+            /* TODO: PopPacket() can fail */
             Socket_PopPacket (&client->tcpsock);
         }
     }
