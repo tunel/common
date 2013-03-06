@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
     Tune Land - Sandbox RPG
-    Copyright (C) 2012-2012
+    Copyright (C) 2012-2013
         Antony Martin <antony(dot)martin(at)scengine(dot)org>
 
     This program is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ struct netclientcmd {
 
 /* pre-defined commands */
 enum CommandsID {
-    NETCLIENT_CONNECTION_DATA,
+    NETCLIENT_CONNECTION_DATA = NETWORK_CONTINUE_STREAM + 1,
     NETCLIENT_UDP_CONNECTION,
     NETCLIENT_PING,
     NETCLIENT_PONG,
