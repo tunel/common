@@ -348,6 +348,32 @@ int Socket_SendTCP (Sock *sock, SockID id, const char *data, size_t size)
     } else
         return /*SCE_ERROR*/SCE_OK; /* ptdr */
 }
+int Socket_StreamTCP (Sock *sock, SockID id, const char *data, size_t size,
+                      size_t total_size)
+{
+    ssize_t n_bytes = 0, theoretical;
+
+    theoretical = size;
+    if (id != NETWORK_CONTINUE_STREAM) {
+        char buffer[2 * SOCKET_ID_SIZE] = {0};
+        Socket_SetID (buffer, (SockID)(total_size + 2 * SOCKET_ID_SIZE));
+        Socket_SetID (&buffer[SOCKET_ID_SIZE], id);
+        n_bytes = send (sock->sock, buffer, 2 * SOCKET_ID_SIZE, 0);
+        theoretical += 2 * SOCKET_ID_SIZE;
+    }
+
+    n_bytes += send (sock->sock, data, size, 0);
+    if (n_bytes == theoretical) {
+#ifdef TL_DEBUG
+        Tlp_Send (NULL, id);
+#endif
+        return SCE_OK;
+    } else if (n_bytes < 0) {
+        SCEE_LogErrno ("send()");
+        return SCE_ERROR;
+    } else
+        return /*SCE_ERROR*/SCE_OK; /* ptdr */
+}
 int Socket_SendUDP (Sock *sock, SockID id, const char *data, size_t size,
                     SOCKADDR_IN *info)
 {

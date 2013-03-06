@@ -55,6 +55,10 @@ typedef enum {
     NETWORK_TIMEOUT
 } SocketState;
 
+/* valid identifier for StreamTCP(), indicates that we add more data
+   into our packet */
+#define NETWORK_CONTINUE_STREAM 1
+
 #define NETWORK_ADDRESS (1)
 #define NETWORK_PORT (1<<1)
 
@@ -120,6 +124,7 @@ int Socket_Connect (Sock*, SOCKADDR_IN*);
 int Socket_Accept (Sock*, Sock*, SOCKADDR_IN*);
 
 int Socket_SendTCP (Sock*, SockID, const char*, size_t);
+int Socket_StreamTCP (Sock*, SockID, const char*, size_t, size_t);
 int Socket_SendUDP (Sock*, SockID, const char*, size_t, SOCKADDR_IN*);
 
 SocketState Socket_ReceiveTCP (Sock*);
