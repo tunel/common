@@ -681,6 +681,14 @@ int NetServer_SendTCP (NetServer *server, NetClient *client, int id,
     err = Socket_SendTCP (&client->tcpsock, id, data, size);
     return err;
 }
+int NetServer_StreamTCP (NetServer *server, NetClient *client, int id,
+                         const char *data, size_t size, size_t total_size)
+{
+    int err;
+    (void)server;
+    err = Socket_StreamTCP (&client->tcpsock, id, data, size, total_size);
+    return err;
+}
 
 int NetServer_SendUDPString (NetServer *server, NetClient *client, int id,
                              const char *data)

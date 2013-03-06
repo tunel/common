@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
     Tune Land - Sandbox RPG
-    Copyright (C) 2012-2012
+    Copyright (C) 2012-2013
         Antony Martin <antony(dot)martin(at)scengine(dot)org>
 
     This program is free software: you can redistribute it and/or modify
@@ -101,6 +101,8 @@ void NetServer_Close (NetServer*);
 void NetServer_KickClient (NetServer*, NetClient*, const char*);
 int NetServer_SendUDP (NetServer*, NetClient*, int, const char*, size_t);
 int NetServer_SendTCP (NetServer*, NetClient*, int, const char*, size_t);
+int NetServer_StreamTCP (NetServer*, NetClient*, int, const char*,
+                         size_t, size_t);
 int NetServer_SendUDPString (NetServer*, NetClient*, int, const char*);
 int NetServer_SendTCPString (NetServer*, NetClient*, int, const char*);
 
