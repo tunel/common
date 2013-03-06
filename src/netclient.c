@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
     Tune Land - Sandbox RPG
-    Copyright (C) 2012-2012
+    Copyright (C) 2012-2013
         Antony Martin <antony(dot)martin(at)scengine(dot)org>
 
     This program is free software: you can redistribute it and/or modify
@@ -74,7 +74,7 @@ static void gotunknowntcp (NetClient *client, void *a, const char *b, size_t c)
 {
 #ifdef TL_DEBUG
     SCEE_SendMsg ("client: unknown TCP command received: %ld.\n",
-                  Socket_GetID (b));
+                  SCE_Decode_Long (b));
 #endif
     (void)a; (void)b; (void)c; (void)client;
 }
@@ -82,7 +82,7 @@ static void gotunknownudp (NetClient *client, void *a, const char *b, size_t c)
 {
 #ifdef TL_DEBUG
     SCEE_SendMsg ("client: unknown UDP command received: %ld.\n",
-                  Socket_GetID (b));
+                  SCE_Decode_Long (b));
 #endif
     (void)a; (void)b; (void)c; (void)client;
 }
