@@ -587,6 +587,10 @@ int NetClient_TCPStep (NetClient *client, SockID *id)
     size_t size;
     const char *data = NULL;
     int r;
+    SockID derp;
+
+    if (!id)
+        id = &derp;
 
 #define LOOP_TIMEOUT 1
     if ((r = Socket_NbReceiveTCP (&client->tcpsock, LOOP_TIMEOUT, 0)) < 0) {
