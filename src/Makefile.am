@@ -9,9 +9,12 @@ libtlcommon_la_LIBADD   = @TL_COMMON_LIBS@
 libtlcommon_la_SOURCES  = socket.c \
                           netclient.c \
                           netprotocol.c \
-                          netserver.c
+                          netserver.c \
+                          terrainbrush.c
+
 
 tl_include_common_HEADERS = socket.h \
                             netclient.h \
                             netprotocol.h \
-                            netserver.h
+                            netserver.h \
+                            terrainbrush.h
