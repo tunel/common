@@ -481,6 +481,7 @@ int NetClient_SendUDPString (NetClient *client, SockID id, const char *data)
         return NetClient_SendUDP (client, id, data, strlen (data) + 1);
 }
 
+#if 0
 /* suxxor function */
 static void NetClient_CheckTimeout (NetClient *client)
 {
@@ -490,6 +491,12 @@ static void NetClient_CheckTimeout (NetClient *client)
         NetClient_CallCmd (&client->timeoutcmd, client, NULL, 0);
         client->listening = client->connected = SCE_FALSE;
     }
+}
+#endif
+
+time_t NetClient_LastPacket (NetClient *client)
+{
+    return client->tm;
 }
 
 static void
@@ -617,9 +624,6 @@ int NetClient_TCPStep (NetClient *client, SockID *id)
             Socket_PopPacket (&client->tcpsock);
         }
     }
-
-    /* check for ping timeout */
-    NetClient_CheckTimeout (client);
 
     return r;
 }

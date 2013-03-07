@@ -110,10 +110,8 @@ int NetClient_SendTCP (NetClient*, SockID, const char*, size_t);
 int NetClient_SendUDP (NetClient*, SockID, const char*, size_t);
 int NetClient_SendTCPString (NetClient*, SockID, const char*);
 int NetClient_SendUDPString (NetClient*, SockID, const char*);
-#if 0
-int NetClient_ReceiveTCP (NetClient*, char*, size_t, int*, long);
-int NetClient_ReceiveUDP (NetClient*, char*, size_t, int*, long);
-#endif
+
+time_t NetClient_LastPacket (NetClient*);
 
 void NetClient_Listen (NetClient*);
 int NetClient_PollTCP (NetClient*);
@@ -126,9 +124,5 @@ void NetClient_StopListening (NetClient*);
 
 long NetClient_WaitTCPPacket (NetClient*, SockID, time_t);
 long NetClient_WaitUDPPacket (NetClient*, SockID, time_t);
-
-time_t NetClient_GetTimeOutDelay (NetClient*);
-
-/*GetPing*/
 
 #endif /* guard */

@@ -274,9 +274,20 @@ static NetClient* NetServer_LocateNetClient (NetServer *server, SockID udp_id)
     return NULL;
 }
 
+#if 0
+static void NetServer_CheckTimeout (NetServer *server, NetClient *client)
+{
+    if (time (NULL) - client->tm >= server->timeout && client->connected) {
+        /* ping timeout ! */
+        NetServer_CallCmd (&server->timeoutcmd, server, client, NULL, 0);
+        client->connected = SCE_FALSE;
+    }
+}
+#endif
+
 static void
-NetServer_NetClientTCPStep (NetServer *server, NetClient *client,
-                            SockID id, const char *data, size_t size)
+NetServer_TreatTCPPacket (NetServer *server, NetClient *client, SockID id,
+                          const char *data, size_t size)
 {
     NetServerCmd *cmd = NULL;
 
@@ -301,13 +312,6 @@ NetServer_NetClientTCPStep (NetServer *server, NetClient *client,
             NetServer_CallCmd (&server->tcp_unknowncmd, server, client,
                                buf, size);
         }
-    }
-
-    /* check ping timeout */ 
-    if (time (NULL) - client->tm >= server->timeout && client->connected) {
-        /* ping timeout ! */
-        NetServer_CallCmd (&server->timeoutcmd, server, client, NULL, 0);
-        client->connected = SCE_FALSE;
     }
 }
 
@@ -491,12 +495,13 @@ static void NetServer_TreatSelected (NetServer *server)
     char data[SOCKET_UDP_PACKET_SIZE] = {0};
     size_t size;
     SockID id;
-    SCE_SListIterator *it = NULL;
+    SCE_SListIterator *it = NULL, *pro = NULL;
     NetClient *client = NULL;
     int r;
 
     /* treat selected sockets */
-    SCE_List_ForEach (it, &server->selected) {
+    /* protected, just in case a client gets mysteriously removed */
+    SCE_List_ForEachProtected (pro, it, &server->selected) {
         /* check for specific cases */
         if (it == Socket_GetIterator (&server->tcpsock)) {
             /* new connection */
@@ -519,7 +524,7 @@ static void NetServer_TreatSelected (NetServer *server)
             NetServer_ReceiveTCP (server, client);
             ptr = Socket_GetPacket (&client->tcpsock, &id, &size);
             if (ptr) {
-                NetServer_NetClientTCPStep (server, client, id, ptr, size);
+                NetServer_TreatTCPPacket (server, client, id, ptr, size);
                 Socket_PopPacket (&client->tcpsock);
             }
         }
