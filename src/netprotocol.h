@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
     Tune Land - Sandbox RPG
-    Copyright (C) 2012-2012
+    Copyright (C) 2012-2013
         Antony Martin <antony(dot)martin(at)scengine(dot)org>
 
     This program is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ enum TlpCommand {
     TLP_NO_OCTREE,
     TLP_NO_CHUNK,
 
-    TLP_AREA_MODIFIED,
+    TLP_EDIT_TERRAIN,
 
     /* chat commands */
     TLP_CHAT_MSG,
