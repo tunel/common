@@ -73,8 +73,8 @@ static void NetClient_DisconnectSockets (NetClient *client)
 static void gotunknowntcp (NetClient *client, void *a, const char *b, size_t c)
 {
 #ifdef TL_DEBUG
-    SCEE_SendMsg ("client: unknown TCP command received: %ld.\n",
-                  SCE_Decode_Long (b));
+    SCEE_SendMsg ("client: unknown TCP command received of size %ld: %ld\n",
+                  c, SCE_Decode_Long (b));
 #endif
     (void)a; (void)b; (void)c; (void)client;
 }
