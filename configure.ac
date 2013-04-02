@@ -19,7 +19,7 @@ AM_SILENT_RULES([yes])
 LT_PREREQ([2.2.0])
 LT_INIT
 AC_PROG_CC
-#AC_PROG_CXX
+AC_PROG_CXX
 
 # basic setup
 
@@ -81,27 +81,28 @@ AC_DEFUN([AX_PKG_CHECK_MODULES_C],
                             [$2])
           TL_COMMON_CFLAGS="${TL_COMMON_CFLAGS} ${$1_CFLAGS}"
           # har har, C++ needs them too.
-#          TL_COMMON_CXXFLAGS="${TL_COMMON_CXXFLAGS} ${$1_CFLAGS}"
+          TL_COMMON_CXXFLAGS="${TL_COMMON_CXXFLAGS} ${$1_CFLAGS}"
           TL_COMMON_LIBS="${TL_COMMON_LIBS} ${$1_LIBS}"
          ])
-dnl AC_DEFUN([AX_PKG_CHECK_MODULES_CXX],
-dnl          [PKG_CHECK_MODULES([$1],
-dnl                             [$2])
-dnl           TL_COMMON_CXXFLAGS="${TL_COMMON_CXXFLAGS} ${$1_CFLAGS}"
-dnl           TL_COMMON_LIBS="${TL_COMMON_LIBS} ${$1_LIBS}"
-dnl          ])
+AC_DEFUN([AX_PKG_CHECK_MODULES_CXX],
+         [PKG_CHECK_MODULES([$1],
+                            [$2])
+          TL_COMMON_CXXFLAGS="${TL_COMMON_CXXFLAGS} ${$1_CFLAGS}"
+          TL_COMMON_LIBS="${TL_COMMON_LIBS} ${$1_LIBS}"
+         ])
 
 TL_COMMON_CFLAGS=
-#TL_COMMON_CXXFLAGS=
+TL_COMMON_CXXFLAGS=
 TL_COMMON_LIBS=
 
 AX_PKG_CHECK_MODULES_C([LIBCURL],    [libcurl])
 AX_PKG_CHECK_MODULES_C([SCEUTILS],   [sceutils])
 AX_PKG_CHECK_MODULES_C([SCECORE],    [scecore])
 #AX_PKG_CHECK_MODULES_C([GL],         [gl])
+AX_PKG_CHECK_MODULES_CXX([BULLET],   [bullet])
 
 AC_SUBST([TL_COMMON_CFLAGS])
-#AC_SUBST([TL_COMMON_CXXFLAGS])
+AC_SUBST([TL_COMMON_CXXFLAGS])
 AC_SUBST([TL_COMMON_LIBS])
 
 # Checks for header files.
