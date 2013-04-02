@@ -10,11 +10,13 @@ libtlcommon_la_SOURCES  = socket.c \
                           netclient.c \
                           netprotocol.c \
                           netserver.c \
-                          terrainbrush.c
+                          terrainbrush.c \
+                          position.c
 
 
 tl_include_common_HEADERS = socket.h \
                             netclient.h \
                             netprotocol.h \
                             netserver.h \
-                            terrainbrush.h
+                            terrainbrush.h \
+                            position.h
