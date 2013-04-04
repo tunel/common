@@ -23,6 +23,10 @@
 #include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
+#ifdef PHY_GET_MESH
+#include <SCE/interface/SCEInterface.h>
+#endif
+
 #ifdef TL_PHY_DEBUG
 #include <GL/gl.h>
 #endif
@@ -92,6 +96,210 @@ public:
             }
         }
     }
+};
+
+class PhyTerrainShape: public btConcaveShape {
+private:
+    mutable SCE_SVoxelWorld *vw;
+    float voxel_unit;
+    int width;
+
+    mutable SCE_SGrid grid;
+    mutable SCE_SMCGenerator mc;
+    mutable size_t n_vertices;
+    mutable size_t n_indices;
+    mutable SCEvertices *vertices;
+    mutable SCEindices *indices;
+
+#ifdef PHY_GET_MESH
+    SCE_SGeometry *geom;
+    SCE_SMesh *mesh;
+#endif
+
+    btVector3 m_scaling;
+
+public:
+
+    PhyTerrainShape (SCE_SVoxelWorld *world, float unit = 1.0, int w = 5) :
+        vw (world),
+        voxel_unit (unit),
+        width (w),
+        n_vertices (0),
+        n_indices (0),
+        vertices (NULL),
+        indices (NULL),
+#ifdef PHY_GET_MESH
+        geom (NULL),
+        mesh (NULL),
+#endif
+        m_scaling (1.0, 1.0, 1.0) {
+        size_t n;
+
+        m_shapeType = CUSTOM_CONCAVE_SHAPE_TYPE;
+
+        n_indices = 0;
+        n_vertices = 0;
+
+        SCE_Grid_Init (&grid);
+        SCE_Grid_SetDimensions (&grid, width, width, width);
+        SCE_Grid_SetPointSize (&grid, 1);
+        if (SCE_Grid_Build (&grid) < 0) goto fail;
+
+        SCE_MC_Init (&mc);
+        n = SCE_Grid_GetNumPoints (&grid);
+        SCE_MC_SetNumCells (&mc, n);
+        if (SCE_MC_Build (&mc) < 0) goto fail;
+
+        if (!(vertices = (SCEvertices*)SCE_malloc (9 * n * sizeof *vertices)))
+            goto fail;
+        if (!(indices = (SCEindices*)SCE_malloc (15 * n * sizeof *indices)))
+            goto fail;
+
+        return;
+    fail:
+        // TODO: well... throw something?
+        return;
+    }
+
+    ~PhyTerrainShape () {
+        // TODO: not yet called
+        SCE_Grid_Clear (&grid);
+        SCE_MC_Clear (&mc);
+        SCE_free (vertices);
+        SCE_free (indices);
+    }
+
+    virtual int getShapeType () const {
+        // return TERRAIN_SHAPE_PROXYTYPE;
+        return CUSTOM_CONCAVE_SHAPE_TYPE;
+    }
+
+    virtual const char* getName () const {
+        return "VOXEL_TERRAIN";
+    }
+
+    virtual void getAabb (const btTransform &t, btVector3 &aabbMin,
+                          btVector3 &aabbMax) const {
+        // return something big (like really big).
+        btScalar big = 1000000000.0;
+        aabbMin.setValue (-big, -big, -big);
+        aabbMax.setValue (big, big, big);
+    }
+
+    virtual void calculateLocalInertia (btScalar mass, btVector3 &inertia) const {
+        inertia = btVector3 (0.0, 0.0, 0.0);
+    }
+
+    virtual void setLocalScaling (const btVector3 &scaling) {
+        // why should I need that?
+        m_scaling = scaling;
+    }
+
+    virtual const btVector3& getLocalScaling () const {
+        return m_scaling;
+    }
+
+    virtual void processAllTriangles (btTriangleCallback *callback,
+                                      const btVector3 &inf,
+                                      const btVector3 &sup) const {
+        SCE_SLongRect3 rect;
+        SCE_SIntRect3 area;
+        size_t i;
+        long w, h, d;
+        float u = voxel_unit;
+
+        // some random offsets to ensure we grab enough voxels
+        // -1 because ??
+        // +1 for ceil(), +1 because area->w = w - 1, +1 because.. ??
+        SCE_Rectangle3_Setl (&rect,
+                             inf.x() / u - 1, inf.y() / u - 1, inf.z() / u - 1,
+                             sup.x() / u + 3, sup.y() / u + 3, sup.z() / u + 3);
+
+        w = SCE_Rectangle3_GetWidthl (&rect);
+        h = SCE_Rectangle3_GetHeightl (&rect);
+        d = SCE_Rectangle3_GetDepthl (&rect);
+
+        if (w * h * d > width * width * width) {
+            SCEE_SendMsg ("processAllTriangles(): region is too big\n");
+            return;
+        }
+
+        SCE_Grid_FillupZeros (&grid);
+        // and we sure hope this call works fine: region exists, doesnt
+        // touch border, and so forth.
+        SCE_VWorld_GetRegion (vw, 0, &rect, (SCEubyte*)SCE_Grid_GetRaw (&grid));
+
+        SCE_Grid_SetDimensions (&grid, w, h, d);
+        SCE_Rectangle3_Set (&area, 0, 0, 0, w - 1, h - 1, d - 1);
+
+        n_vertices = SCE_MC_GenerateVertices (&mc, &area, &grid, vertices);
+        n_indices = SCE_MC_GenerateIndices (&mc, indices);
+
+        // transform vertices into world space
+        long p1[3], p2[3];
+        SCE_Rectangle3_GetPointslv (&rect, p1, p2);
+        for (i = 0; i < n_vertices; i++) {
+            vertices[i * 3 + 0] *= w;
+            vertices[i * 3 + 1] *= h;
+            vertices[i * 3 + 2] *= d;
+            vertices[i * 3 + 0] = u * (vertices[i * 3 + 0] + p1[0]);
+            vertices[i * 3 + 1] = u * (vertices[i * 3 + 1] + p1[1]);
+            vertices[i * 3 + 2] = u * (vertices[i * 3 + 2] + p1[2]);
+        }
+
+        // process triangles
+        SCEvertices *v = vertices;
+        SCEindices *ind = indices;
+        size_t tri_id = 0;
+        for (i = 0; i < n_indices; tri_id++) {
+            btVector3 p[3];
+            p[0].setValue (v[ind[i] * 3], v[ind[i] * 3 + 1], v[ind[i] * 3 + 2]);
+            i++;
+            p[1].setValue (v[ind[i] * 3], v[ind[i] * 3 + 1], v[ind[i] * 3 + 2]);
+            i++;
+            p[2].setValue (v[ind[i] * 3], v[ind[i] * 3 + 1], v[ind[i] * 3 + 2]);
+            i++;
+            callback->processTriangle (p, 0, tri_id);
+        }
+    }
+
+#ifdef PHY_GET_MESH
+    SCE_SMesh* getMesh () {
+
+        if (!mesh) {
+            SCE_SGeometryArray ar1, ar2;
+
+            geom = SCE_Geometry_Create ();
+
+            SCE_Geometry_InitArray (&ar1);
+            SCE_Geometry_SetArrayData (&ar1, SCE_POSITION, SCE_VERTICES_TYPE, 0, 3,
+                                       NULL, SCE_FALSE);
+            SCE_Geometry_AddArrayDup (geom, &ar1, SCE_FALSE);
+            SCE_Geometry_InitArray (&ar1);
+            SCE_Geometry_SetArrayIndices (&ar1, SCE_INDICES_TYPE, NULL, SCE_FALSE);
+            SCE_Geometry_SetIndexArrayDup (geom, &ar1, SCE_FALSE);
+            SCE_Geometry_SetPrimitiveType (geom, SCE_TRIANGLES);
+
+            SCE_Geometry_SetNumVertices (geom, width * width * width * 3);
+            SCE_Geometry_SetNumIndices (geom, width * width * width * 15);
+
+            mesh = SCE_Mesh_CreateFrom (geom, 1);
+            SCE_Mesh_AutoBuild (mesh);
+        }
+
+        size_t size;
+
+        SCE_Mesh_SetNumVertices (mesh, n_vertices);
+        SCE_Mesh_SetNumIndices (mesh, n_indices);
+
+        size = n_vertices * 3 * sizeof (SCEvertices);
+        SCE_Mesh_UploadVertices (mesh, SCE_MESH_STREAM_G, vertices, 0, size);
+        size = n_indices * sizeof (SCEindices);
+        SCE_Mesh_UploadIndices (mesh, indices, size);
+
+        return mesh;
+    }
+#endif
 };
 
 static void* Phy_LoadTriMeshResource (const char*, int, void*);
@@ -568,6 +776,24 @@ failure:
     SCEE_LogSrc ();
     return NULL;
 }
+PhysicsShape* Phy_NewVoxelTerrainShape (SCE_SVoxelWorld *vw, float unit, int width)
+{
+    PhyTerrainShape *colshape = NULL;
+    PhysicsShape *shape = (PhysicsShape*)SCE_malloc (sizeof *shape);
+    if (!shape)
+        goto failure;
+    Phy_InitShape (shape);
+
+    colshape = new PhyTerrainShape (vw, unit, width);
+    shape->shape = colshape;
+
+    return shape;
+failure:
+    Phy_FreeShape (shape);
+    SCEE_LogSrc ();
+    return NULL;
+}
+// TODO: not static nor in the header..?
 PhysicsShape* Phy_NewTriMeshShapeCopy (PhysicsShape *ps, int canfree)
 {
     btScaledBvhTriangleMeshShape *scb = NULL;
@@ -1026,6 +1252,13 @@ PhysicsShapes* Phy_GetShapes (Physics *phy)
 {
     return phy->shapes;
 }
+#ifdef PHY_GET_MESH
+SCE_SMesh* Phy_GetMesh (Physics *phy)
+{
+    PhyTerrainShape *shape = (PhyTerrainShape*)phy->shapes->shape;
+    return shape->getMesh ();
+}
+#endif
 
 void Phy_Activate (Physics *phy, int activated)
 {

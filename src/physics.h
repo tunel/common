@@ -23,6 +23,9 @@
 #include <pthread.h>
 #include <SCE/utils/SCEUtils.h>
 #include <SCE/core/SCECore.h>
+#ifdef PHY_GET_MESH
+#include <SCE/interface/SCEInterface.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -205,6 +208,7 @@ PhysicsShape* Phy_NewSphereShape (float);
 PhysicsShape* Phy_NewBoxShape (float, float, float);
 PhysicsShape* Phy_NewBoxShapev (SCE_TVector3);
 PhysicsShape* Phy_NewTriMeshShape (int, PhysicsTriMesh*, int, int);
+PhysicsShape* Phy_NewVoxelTerrainShape (SCE_SVoxelWorld*, float, int);
 void Phy_FreeShape (PhysicsShape*);
 
 PhysicsShapes* Phy_NewShapes (void);
@@ -250,6 +254,9 @@ void Phy_SetMutex (Physics*, pthread_mutex_t*);
 
 void Phy_SetShapes (Physics*, PhysicsShapes*);
 PhysicsShapes* Phy_GetShapes (Physics*);
+#ifdef PHY_GET_MESH
+SCE_SMesh* Phy_GetMesh (Physics*);
+#endif
 
 void Phy_Activate (Physics*, int);
 int Phy_IsActivated (Physics*);
