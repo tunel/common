@@ -1878,12 +1878,83 @@ static PhysicsTriMesh* Phy_LoadTriMesh (const char *fname, int convex,
 }
 
 
+class PhyCharacterAction : public btActionInterface
+{
+protected:
+    PhyCharacter *m_pc;
+    btVector3 m_raysrc;
+    btVector3 m_raydst;
+    btScalar m_raylambda;
+
+public:
+
+    PhyCharacterAction (PhyCharacter *pc) :
+        m_pc (pc),
+        m_raysrc (0.0, 0.0, 1.0),
+        m_raydst (0.0, 0.0, 0.0),
+        m_raylambda (1.0) {}
+
+    virtual void debugDraw (btIDebugDraw *debugDrawer) {}
+
+    virtual void updateAction (btCollisionWorld *world, btScalar dt) {
+        btTransform xform;
+        btRigidBody *body = (btRigidBody*)m_pc->phy->body;
+        body->getMotionState()->getWorldTransform (xform);
+        btVector3 down = -xform.getBasis()[2];
+        btScalar height = btScalar (m_pc->radius) + btScalar (m_pc->height * 0.5);
+
+        down.normalize ();
+
+        m_raysrc = xform.getOrigin();
+        // ???
+        m_raydst = m_raysrc + down * height * btScalar (1.1);
+
+        class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback
+        {
+        protected:
+            btRigidBody* m_me;
+        public:
+            ClosestNotMe (btRigidBody* me) :
+                m_me (me),
+                btCollisionWorld::ClosestRayResultCallback (
+                    btVector3 (0.0, 0.0, 0.0), btVector3 (0.0, 0.0, 0.0)) {}
+
+            virtual btScalar
+            addSingleResult (btCollisionWorld::LocalRayResult &raysult,
+                             bool nws) {
+                if (raysult.m_collisionObject == m_me)
+                    return 1.0;
+                return ClosestRayResultCallback::addSingleResult (raysult, nws);
+            }
+        };
+
+        ClosestNotMe raycb (body); // ray callback
+
+        raycb.m_closestHitFraction = 1.0;
+        world->rayTest (m_raysrc, m_raydst, raycb);
+        if (raycb.hasHit ())
+            m_raylambda = raycb.m_closestHitFraction;
+        else
+            m_raylambda = 1.0;
+
+        m_pc->on_ground = m_raylambda < 1.0;
+    }
+};
+
+
 static void Phy_InitCharacter (PhyCharacter *pc)
 {
     pc->phy = NULL;
+    pc->action = NULL;
+    pc->radius = 1.0;
+    pc->height = 1.0;
+    pc->on_ground = SCE_FALSE;
 }
 static void Phy_ClearCharacter (PhyCharacter *pc)
 {
+    PhyCharacterAction *action = (PhyCharacterAction*)pc->action;
+
+    delete action;
     Phy_Free (pc->phy);
 }
 
@@ -1893,6 +1964,7 @@ PhyCharacter* Phy_NewCharacter (float radius, float height)
     PhysicsShapes *shapes = NULL;
     PhyCharacter *pc = NULL;
     btRigidBody *body = NULL;
+    PhyCharacterAction *action = NULL;
 
     if (!(pc = (PhyCharacter*)SCE_malloc (sizeof *pc)))
         goto fail;
@@ -1909,9 +1981,15 @@ PhyCharacter* Phy_NewCharacter (float radius, float height)
     Phy_SetFriction (pc->phy, 4.0);
     Phy_Build (pc->phy);
 
+    pc->radius = radius;
+    pc->height = height;
+
     body = (btRigidBody*)pc->phy->body;
     body->setSleepingThresholds (0.0, 0.0);
     body->setAngularFactor (0.0);
+
+    action = new PhyCharacterAction (pc);
+    pc->action = action;
 
     return pc;
 fail:
@@ -1928,11 +2006,15 @@ void Phy_FreeCharacter (PhyCharacter *pc)
 
 void Phy_AddCharacter (PhyWorld *world, PhyCharacter *pc)
 {
+    btDiscreteDynamicsWorld *w = (btDiscreteDynamicsWorld*)world->world;
+    w->addAction ((PhyCharacterAction*)pc->action);
     Phy_Add (world, pc->phy);
     // set world ccd?
 }
 void Phy_RemoveCharacter (PhyCharacter *pc)
 {
+    btDiscreteDynamicsWorld *w = (btDiscreteDynamicsWorld*)pc->phy->world->world;
+    w->removeAction ((PhyCharacterAction*)pc->action);
     Phy_Remove (pc->phy);
 }
 
@@ -1946,14 +2028,23 @@ void Phy_SetCharacterVelocityv (PhyCharacter *pc, const SCE_TVector3 v)
     // TODO: dont apply velocity if character doesnt touch the ground
     SCE_TVector3 vel, desired;
 
+    if (!pc->on_ground)
+        return;
+
     SCE_Vector3_Copy (desired, v);
     Phy_GetLinearVelocityRelv (pc->phy, vel);
 
     if (!SCE_Vector3_IsZero (desired)) {
         SCE_TVector3 final;
         Phy_Activate (pc->phy, SCE_TRUE);
-        vel[2] = 0.0;
+        if (SCE_Math_IsZero (desired[2]))
+            vel[2] = 0.0;
         SCE_Vector3_Operator2v (final, =, desired, -, vel);
         Phy_SetLinearImpulseRelv (pc->phy, final);
     }
+}
+
+int Phy_IsCharacterOnGround (const PhyCharacter *pc)
+{
+    return pc->on_ground;
 }

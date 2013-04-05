@@ -143,6 +143,10 @@ struct physics {
 typedef struct phycharacter PhyCharacter;
 struct phycharacter {
     Physics *phy;
+    void *action;
+    float radius;
+    float height;
+    int on_ground;
 };
 
 /* lol */
@@ -335,6 +339,8 @@ void Phy_RemoveCharacter (PhyCharacter*);
 
 void Phy_SetCharacterVelocity (PhyCharacter*, float, float, float);
 void Phy_SetCharacterVelocityv (PhyCharacter*, const SCE_TVector3);
+
+int Phy_IsCharacterOnGround (const PhyCharacter*);
 
 #ifdef __cplusplus
 } /* extern "C" */
