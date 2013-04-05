@@ -727,6 +727,31 @@ PhysicsShape* Phy_NewBoxShapev (SCE_TVector3 v)
 {
     return Phy_NewBoxShape (v[0], v[1], v[2]);
 }
+
+PhysicsShape* Phy_NewCapsuleShape (float radius, float height)
+{
+    btCollisionShape *colshape;
+    PhysicsShape *shape = (PhysicsShape*)SCE_malloc (sizeof *shape);
+    if (!shape)
+        goto failure;
+    Phy_InitShape (shape);
+    colshape = new btCapsuleShapeZ (btScalar (radius), btScalar (height));
+    if (colshape == NULL) {
+        cppallocfail;
+        goto failure;
+    }
+    shape->shape = colshape;
+    // the capsule is oriented toward the Z axis
+    shape->z = M_PI * radius * radius;
+    shape->x = shape->y = shape->z + 2.0 * radius * height;
+
+    return shape;
+failure:
+    Phy_FreeShape (shape);
+    SCEE_LogSrc ();
+    return NULL;
+}
+
 PhysicsShape* Phy_NewTriMeshShape (int dynamic, PhysicsTriMesh *trimesh,
                                    int scale, int canfree)
 {

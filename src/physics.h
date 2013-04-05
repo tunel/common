@@ -207,6 +207,7 @@ void Phy_FreeTriMesh (PhysicsTriMesh*);
 PhysicsShape* Phy_NewSphereShape (float);
 PhysicsShape* Phy_NewBoxShape (float, float, float);
 PhysicsShape* Phy_NewBoxShapev (SCE_TVector3);
+PhysicsShape* Phy_NewCapsuleShape (float, float);
 PhysicsShape* Phy_NewTriMeshShape (int, PhysicsTriMesh*, int, int);
 PhysicsShape* Phy_NewVoxelTerrainShape (SCE_SVoxelWorld*, float, int);
 void Phy_FreeShape (PhysicsShape*);
