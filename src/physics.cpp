@@ -1904,8 +1904,9 @@ PhyCharacter* Phy_NewCharacter (float radius, float height)
     if (!(shapes = Phy_NewShapesFromShape (sce_matrix4_id, shape)))
         goto fail;
     Phy_SetShapes (pc->phy, shapes);
-    Phy_SetMass (pc->phy, 6.0);
+    Phy_SetMass (pc->phy, 1.0);
     Phy_SetPosition (pc->phy, 50.0, 50.0, 100.0); // :D
+    Phy_SetFriction (pc->phy, 4.0);
     Phy_Build (pc->phy);
 
     body = (btRigidBody*)pc->phy->body;
@@ -1937,14 +1938,22 @@ void Phy_RemoveCharacter (PhyCharacter *pc)
 
 void Phy_SetCharacterVelocity (PhyCharacter *pc, float x, float y, float z)
 {
-    SCE_TVector3 vel;
-    Phy_Activate (pc->phy, SCE_TRUE);
-    Phy_GetLinearVelocityRelv (pc->phy, vel);
-    z += vel[2];
-    // TODO: dont apply velocity if character doesnt touch the ground
-    Phy_SetLinearVelRel (pc->phy, x, y, z);
+    SCE_TVector3 v = {x, y, z};
+    Phy_SetCharacterVelocityv (pc, v);
 }
 void Phy_SetCharacterVelocityv (PhyCharacter *pc, const SCE_TVector3 v)
 {
-    Phy_SetCharacterVelocity (pc, v[0], v[1], v[2]);
+    // TODO: dont apply velocity if character doesnt touch the ground
+    SCE_TVector3 vel, desired;
+
+    SCE_Vector3_Copy (desired, v);
+    Phy_GetLinearVelocityRelv (pc->phy, vel);
+
+    if (!SCE_Vector3_IsZero (desired)) {
+        SCE_TVector3 final;
+        Phy_Activate (pc->phy, SCE_TRUE);
+        vel[2] = 0.0;
+        SCE_Vector3_Operator2v (final, =, desired, -, vel);
+        Phy_SetLinearImpulseRelv (pc->phy, final);
+    }
 }
