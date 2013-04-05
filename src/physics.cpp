@@ -1876,3 +1876,75 @@ static PhysicsTriMesh* Phy_LoadTriMesh (const char *fname, int convex,
         SCEE_LogSrc ();
     return trimesh;
 }
+
+
+static void Phy_InitCharacter (PhyCharacter *pc)
+{
+    pc->phy = NULL;
+}
+static void Phy_ClearCharacter (PhyCharacter *pc)
+{
+    Phy_Free (pc->phy);
+}
+
+PhyCharacter* Phy_NewCharacter (float radius, float height)
+{
+    PhysicsShape *shape = NULL;
+    PhysicsShapes *shapes = NULL;
+    PhyCharacter *pc = NULL;
+    btRigidBody *body = NULL;
+
+    if (!(pc = (PhyCharacter*)SCE_malloc (sizeof *pc)))
+        goto fail;
+    Phy_InitCharacter (pc);
+    if (!(pc->phy = Phy_New (PHY_DYNAMIC_BODY)))
+        goto fail;
+    if (!(shape = Phy_NewCapsuleShape (radius, height)))
+        goto fail;
+    if (!(shapes = Phy_NewShapesFromShape (sce_matrix4_id, shape)))
+        goto fail;
+    Phy_SetShapes (pc->phy, shapes);
+    Phy_SetMass (pc->phy, 6.0);
+    Phy_SetPosition (pc->phy, 50.0, 50.0, 100.0); // :D
+    Phy_Build (pc->phy);
+
+    body = (btRigidBody*)pc->phy->body;
+    body->setSleepingThresholds (0.0, 0.0);
+    body->setAngularFactor (0.0);
+
+    return pc;
+fail:
+    SCEE_LogSrc ();
+    return NULL;
+}
+void Phy_FreeCharacter (PhyCharacter *pc)
+{
+    if (pc) {
+        Phy_ClearCharacter (pc);
+        SCE_free (pc);
+    }
+}
+
+void Phy_AddCharacter (PhyWorld *world, PhyCharacter *pc)
+{
+    Phy_Add (world, pc->phy);
+    // set world ccd?
+}
+void Phy_RemoveCharacter (PhyCharacter *pc)
+{
+    Phy_Remove (pc->phy);
+}
+
+void Phy_SetCharacterVelocity (PhyCharacter *pc, float x, float y, float z)
+{
+    SCE_TVector3 vel;
+    Phy_Activate (pc->phy, SCE_TRUE);
+    Phy_GetLinearVelocityRelv (pc->phy, vel);
+    z += vel[2];
+    // TODO: dont apply velocity if character doesnt touch the ground
+    Phy_SetLinearVelRel (pc->phy, x, y, z);
+}
+void Phy_SetCharacterVelocityv (PhyCharacter *pc, const SCE_TVector3 v)
+{
+    Phy_SetCharacterVelocity (pc, v[0], v[1], v[2]);
+}

@@ -140,6 +140,11 @@ struct physics {
 };
 
 
+typedef struct phycharacter PhyCharacter;
+struct phycharacter {
+    Physics *phy;
+};
+
 /* lol */
 typedef enum {
     PHY_NO = SCE_FALSE,
@@ -321,6 +326,15 @@ void Phy_SetCollisionCallback (PhyWorld*, PhyCollisionCallbackFunc, void*);
 int Phy_NeedsCollision (PhyCollision*);
 void Phy_ProcessCollision (PhyCollision*);
 int Phy_GetCollisionInfov (PhyCollision*, unsigned int, PhyCollisionInfo*, int);
+
+PhyCharacter* Phy_NewCharacter (float, float);
+void Phy_FreeCharacter (PhyCharacter*);
+
+void Phy_AddCharacter (PhyWorld*, PhyCharacter*);
+void Phy_RemoveCharacter (PhyCharacter*);
+
+void Phy_SetCharacterVelocity (PhyCharacter*, float, float, float);
+void Phy_SetCharacterVelocityv (PhyCharacter*, const SCE_TVector3);
 
 #ifdef __cplusplus
 } /* extern "C" */
