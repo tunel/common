@@ -33,6 +33,7 @@ struct character {
     float mass;
     float friction;
     float jump;
+    float rotation;
 };
 
 void Char_Init (Character*);
@@ -55,6 +56,8 @@ int Char_Build (Character*);
 
 Physics* Char_GetPhysics (Character*);
 PhyCharacter* Char_GetPhyCharacter (Character*);
+
+void Char_SetRotation (Character*, float);
 
 void Char_Jump (Character*, float);
 void Char_Move (Character*, const SCE_TVector3);

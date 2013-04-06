@@ -31,6 +31,7 @@ void Char_Init (Character *ch)
     ch->mass = 1.0;
     ch->friction = 3.0;
     ch->jump = 0.0;
+    ch->rotation = 0.0;
 }
 void Char_Clear (Character *ch)
 {
@@ -121,6 +122,11 @@ PhyCharacter* Char_GetPhyCharacter (Character *ch)
     return ch->pc;
 }
 
+void Char_SetRotation (Character *ch, float angle)
+{
+    ch->rotation = angle;
+}
+
 void Char_Jump (Character *ch, float factor)
 {
     ch->jump = factor;
@@ -132,13 +138,22 @@ void Char_Jump (Character *ch, float factor)
  */
 void Char_Move (Character *ch, const SCE_TVector3 move)
 {
+    SCE_TVector3 forward_vec = {0.0, 1.0, 0.0};
+    SCE_TVector3 side_vec = {1.0, 0.0, 0.0};
     SCE_TVector3 v;
+    float a = ch->rotation;
 
-    SCE_Vector3_Copy (v, move);
+    SCE_Vector3_RotateZ (forward_vec, cos (a), sin (a));
+    SCE_Vector3_RotateZ (side_vec, cos (a), sin (a));
+
+    SCE_Vector3_Operator1v (v, = move[1] *, forward_vec);
+    SCE_Vector3_Operator1v (v, += move[0] *, side_vec);
+
     SCE_Vector3_Operator1 (v, *=, ch->max_speed);
+
     v[2] += ch->jump * ch->jump_impulse;
     Phy_SetCharacterVelocityv (ch->pc, v);
-    if (Phy_IsCharacterOnGround (ch->pc))
+    if (Char_OnGround (ch))
         ch->jump = 0.0;
 }
 
