@@ -1331,7 +1331,7 @@ void Phy_SetPosition (Physics *phy, float x, float y, float z)
     t.setOrigin (btVector3 (x, y, z));
     mstate->setWorldTransform (t);
 }
-void Phy_SetPositionv (Physics *phy, SCE_TVector3 v)
+void Phy_SetPositionv (Physics *phy, const SCE_TVector3 v)
 {
     Phy_SetPosition (phy, v[0], v[1], v[2]);
 }

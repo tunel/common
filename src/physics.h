@@ -277,7 +277,7 @@ int Phy_IsStatic (Physics*);
 /* those functions are just set to initialize a physics body
    or move a kinematic body */
 void Phy_SetPosition (Physics*, float, float, float);
-void Phy_SetPositionv (Physics*, SCE_TVector3);
+void Phy_SetPositionv (Physics*, const SCE_TVector3);
 #if 0
 void Phy_SetRotation (Physics*, float, float, float);
 void Phy_SetRotationv (Physics*, SCE_TVector3);
