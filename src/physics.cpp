@@ -1958,12 +1958,9 @@ static void Phy_ClearCharacter (PhyCharacter *pc)
     Phy_Free (pc->phy);
 }
 
-PhyCharacter* Phy_NewCharacter (float radius, float height)
+PhyCharacter* Phy_NewCharacter (void)
 {
-    PhysicsShape *shape = NULL;
-    PhysicsShapes *shapes = NULL;
     PhyCharacter *pc = NULL;
-    btRigidBody *body = NULL;
     PhyCharacterAction *action = NULL;
 
     if (!(pc = (PhyCharacter*)SCE_malloc (sizeof *pc)))
@@ -1971,24 +1968,15 @@ PhyCharacter* Phy_NewCharacter (float radius, float height)
     Phy_InitCharacter (pc);
     if (!(pc->phy = Phy_New (PHY_DYNAMIC_BODY)))
         goto fail;
-    if (!(shape = Phy_NewCapsuleShape (radius, height)))
-        goto fail;
-    if (!(shapes = Phy_NewShapesFromShape (sce_matrix4_id, shape)))
-        goto fail;
-    Phy_SetShapes (pc->phy, shapes);
+
+    // setup default parameters
     Phy_SetMass (pc->phy, 1.0);
-    Phy_SetPosition (pc->phy, 50.0, 50.0, 100.0); // :D
     Phy_SetFriction (pc->phy, 4.0);
-    Phy_Build (pc->phy);
 
-    pc->radius = radius;
-    pc->height = height;
-
-    body = (btRigidBody*)pc->phy->body;
-    body->setSleepingThresholds (0.0, 0.0);
-    body->setAngularFactor (0.0);
-
-    action = new PhyCharacterAction (pc);
+    if (!(action = new PhyCharacterAction (pc))) {
+        cppallocfail;
+        goto fail;
+    }
     pc->action = action;
 
     return pc;
@@ -2002,6 +1990,42 @@ void Phy_FreeCharacter (PhyCharacter *pc)
         Phy_ClearCharacter (pc);
         SCE_free (pc);
     }
+}
+
+void Phy_SetCharacterDimensions (PhyCharacter *pc, float r, float h)
+{
+    pc->radius = r;
+    pc->height = h;
+}
+Physics* Phy_GetCharacterPhysics (PhyCharacter *pc)
+{
+    return pc->phy;
+}
+
+// it builds character haha!
+int Phy_BuildCharacter (PhyCharacter *pc)
+{
+    PhysicsShape *shape = NULL;
+    PhysicsShapes *shapes = NULL;
+    btRigidBody *body = NULL;
+
+    if (!(shape = Phy_NewCapsuleShape (pc->radius, pc->height)))
+        goto fail;
+    if (!(shapes = Phy_NewShapesFromShape (sce_matrix4_id, shape)))
+        goto fail;
+
+    Phy_SetShapes (pc->phy, shapes);
+    if (Phy_Build (pc->phy) < 0)
+        goto fail;
+
+    body = (btRigidBody*)pc->phy->body;
+    body->setSleepingThresholds (0.0, 0.0);
+    body->setAngularFactor (0.0);
+
+    return SCE_OK;
+fail:
+    SCEE_LogSrc ();
+    return SCE_ERROR;
 }
 
 void Phy_AddCharacter (PhyWorld *world, PhyCharacter *pc)

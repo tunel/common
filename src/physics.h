@@ -331,8 +331,13 @@ int Phy_NeedsCollision (PhyCollision*);
 void Phy_ProcessCollision (PhyCollision*);
 int Phy_GetCollisionInfov (PhyCollision*, unsigned int, PhyCollisionInfo*, int);
 
-PhyCharacter* Phy_NewCharacter (float, float);
+PhyCharacter* Phy_NewCharacter (void);
 void Phy_FreeCharacter (PhyCharacter*);
+
+void Phy_SetCharacterDimensions (PhyCharacter*, float, float);
+Physics* Phy_GetCharacterPhysics (PhyCharacter*);
+
+int Phy_BuildCharacter (PhyCharacter*);
 
 void Phy_AddCharacter (PhyWorld*, PhyCharacter*);
 void Phy_RemoveCharacter (PhyCharacter*);
