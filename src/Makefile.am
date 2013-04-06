@@ -7,6 +7,7 @@ libtlcommon_la_CXXFLAGS = @TL_COMMON_CXXFLAGS@
 libtlcommon_la_LDFLAGS  = -version-info @TL_COMMON_LTVERSION@
 libtlcommon_la_LIBADD   = @TL_COMMON_LIBS@
 libtlcommon_la_SOURCES  = socket.c \
+                          ptimer.c \
                           netclient.c \
                           netprotocol.c \
                           netserver.c \
@@ -17,6 +18,7 @@ libtlcommon_la_SOURCES  = socket.c \
 
 
 tl_include_common_HEADERS = socket.h \
+                            ptimer.h \
                             netclient.h \
                             netprotocol.h \
                             netserver.h \
