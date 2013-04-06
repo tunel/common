@@ -12,7 +12,8 @@ libtlcommon_la_SOURCES  = socket.c \
                           netserver.c \
                           terrainbrush.c \
                           position.c \
-                          physics.cpp
+                          physics.cpp \
+                          character.c
 
 
 tl_include_common_HEADERS = socket.h \
@@ -21,4 +22,5 @@ tl_include_common_HEADERS = socket.h \
                             netserver.h \
                             terrainbrush.h \
                             position.h \
-                            physics.h
+                            physics.h \
+                            character.h
