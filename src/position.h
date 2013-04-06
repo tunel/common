@@ -22,6 +22,8 @@
 
 #include <SCE/utils/SCEUtils.h>
 
+#define POS_MAX_SERIALIZED_SIZE (16 * 4)
+
 /* level of compression of the data */
 enum {
     POS_COMP_0,                 /* none compression */
@@ -63,7 +65,7 @@ void Pos_ApplyVelocities (Position*, float);
 
 void Pos_Difference (const Position*, const Position*, Position*);
 
-size_t Pos_PackIntoBuffer (Position*, unsigned char*);
-void Pos_UnpackFromBuffer (Position*, size_t, unsigned char*);
+size_t Pos_Serialize (const Position*, unsigned char*);
+void Pos_Deserialize (Position*, size_t, const unsigned char*);
 
 #endif /* guard */

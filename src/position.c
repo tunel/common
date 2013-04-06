@@ -116,7 +116,7 @@ void Pos_Difference (const Position *a, const Position *b, Position *d)
 
 
 static unsigned char*
-Pos_PackFloats (float *v, int num, unsigned char ne, unsigned char nm,
+Pos_PackFloats (const float *v, int num, unsigned char ne, unsigned char nm,
                 int *offset, unsigned char *buf)
 {
     int i;
@@ -124,10 +124,7 @@ Pos_PackFloats (float *v, int num, unsigned char ne, unsigned char nm,
         SCE_Encode_Float (v[i], SCE_TRUE, ne, nm, offset, &buf);
     return buf;
 }
-/**
- * \brief Makes a sendable buffer from an object
- */
-size_t Pos_PackIntoBuffer (Position *pos, unsigned char *buf)
+size_t Pos_Serialize (const Position *pos, unsigned char *buf)
 {
     unsigned char ne = 8, nm = 23;
     int offset = 0;
@@ -140,20 +137,16 @@ size_t Pos_PackIntoBuffer (Position *pos, unsigned char *buf)
     return (3 + 4 + 3 + 3 + 3) * 4; /* 4 bytes for each float */
 }
 
-
 static unsigned char*
 Pos_UnpackFloats (float *v, int num, unsigned char ne, unsigned char nm,
-                  int *offset, unsigned char *buf)
+                  int *offset, const unsigned char *buf)
 {
     int i;
     for (i = 0; i < num; i++)
         v[i] = SCE_Decode_Float (&buf, SCE_TRUE, ne, nm, offset);
     return buf;
 }
-/**
- * \brief Makes an object from a received buffer from network
- */
-void Pos_UnpackFromBuffer (Position *pos, size_t size, unsigned char *buf)
+void Pos_Deserialize (Position *pos, size_t size, const unsigned char *buf)
 {
     unsigned char ne = 8, nm = 23;
     int offset = 0;
