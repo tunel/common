@@ -321,8 +321,12 @@ static void NetServer_TreatUDPPacket (NetServer *server, NetClient *client,
     NetServerCmd *cmd = NULL;
     client->tm = time (NULL);
     cmd = locatecmd (&server->udp_cmds, id);
-    if (!cmd) {
-        NetServer_CallCmd (cmd, server, client, &data[3 * SOCKET_ID_SIZE],size);
+    if (cmd) {
+        /* netserver adds a layer of shit over packets sends through UDP: first
+           SOCKET_ID_SIZE bytes after the natural crap setup by socket module
+           are for some kind of UDP identification, whatever. */
+        NetServer_CallCmd (cmd, server, client, &data[3 * SOCKET_ID_SIZE],
+                           size - SOCKET_ID_SIZE);
     } else {
         unsigned char buf[4] = {0};
         SCE_Encode_Long (id, buf);

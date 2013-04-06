@@ -438,7 +438,7 @@ SocketState Socket_ReceiveUDP (Sock *sock, char *data, size_t size,
                n_bytes >= Socket_GetID (data)) {
         *id = (int)Socket_GetID (&data[SOCKET_ID_SIZE]);
         if (rcvsize)
-            *rcvsize = (size_t)Socket_GetID (data);
+            *rcvsize = (size_t)Socket_GetID (data) - 2 * SOCKET_ID_SIZE;
         err = SCE_OK;
     } else {
         SCEE_Log (SOCKET_PACKET_LOST);
