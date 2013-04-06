@@ -1955,6 +1955,8 @@ static void Phy_ClearCharacter (PhyCharacter *pc)
     PhyCharacterAction *action = (PhyCharacterAction*)pc->action;
 
     delete action;
+    if (pc->phy->world)
+        Phy_RemoveCharacter (pc);
     Phy_Free (pc->phy);
 }
 
