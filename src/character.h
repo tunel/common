@@ -23,6 +23,8 @@
 #include <SCE/utils/SCEUtils.h>
 #include "physics.h"
 
+#define CHAR_SERIALIZED_COMMAND_SIZE (SCE_ENCODE_LONG_SIZE * 4)
+
 typedef struct character Character;
 struct character {
     PhyCharacter *pc;
@@ -63,5 +65,10 @@ void Char_Jump (Character*, float);
 void Char_Move (Character*, const SCE_TVector3);
 
 int Char_OnGround (const Character*);
+
+void Char_SerializeCommand (const SCE_TVector3, float,
+                            unsigned char[CHAR_SERIALIZED_COMMAND_SIZE]);
+void Char_DeserializeCommand (SCE_TVector3, float*,
+                             const unsigned char[CHAR_SERIALIZED_COMMAND_SIZE]);
 
 #endif /* guard */

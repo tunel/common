@@ -161,3 +161,23 @@ int Char_OnGround (const Character *ch)
 {
     return Phy_IsCharacterOnGround (ch->pc);
 }
+
+
+#define FACTOR 100000.0
+#define offset SCE_ENCODE_LONG_SIZE
+void Char_SerializeCommand (const SCE_TVector3 move, float jump,
+                            unsigned char buffer[offset * 4])
+{
+    SCE_Encode_Long (move[0] * FACTOR, &buffer[offset * 0]);
+    SCE_Encode_Long (move[1] * FACTOR, &buffer[offset * 1]);
+    SCE_Encode_Long (move[2] * FACTOR, &buffer[offset * 2]);
+    SCE_Encode_Long (jump    * FACTOR, &buffer[offset * 3]);
+}
+void Char_DeserializeCommand (SCE_TVector3 move, float *jump,
+                              const unsigned char buffer[offset * 4])
+{
+    move[0] = SCE_Decode_Long (&buffer[offset * 0]) / FACTOR;
+    move[1] = SCE_Decode_Long (&buffer[offset * 1]) / FACTOR;
+    move[2] = SCE_Decode_Long (&buffer[offset * 2]) / FACTOR;
+    *jump   = SCE_Decode_Long (&buffer[offset * 3]) / FACTOR;
+}
