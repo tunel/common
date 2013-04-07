@@ -26,7 +26,7 @@ enum TlpCommand {
     /* do not need to be logged in */
     /* state/query */
     TLP_SAY_HI = NETWORK_FIRST_ID_OFFSET,
-    TLP_GET_CLIENT_NUM,
+    TLP_NUM_CLIENTS,
     TLP_GET_CLIENT_LIST,
     TLP_GET_CLIENT_NICK,
 
@@ -39,6 +39,7 @@ enum TlpCommand {
     /* terrain commands */
     TLP_CHUNK_SIZE,
     TLP_NUM_LOD,
+    TLP_VOXEL_UNIT,
 
     TLP_REGISTER_REGION,
     TLP_UNREGISTER_REGION,
