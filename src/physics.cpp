@@ -1877,7 +1877,6 @@ static PhysicsTriMesh* Phy_LoadTriMesh (const char *fname, int convex,
     return trimesh;
 }
 
-
 class PhyCharacterAction : public btActionInterface
 {
 protected:
@@ -1885,18 +1884,29 @@ protected:
     btVector3 m_raysrc;
     btVector3 m_raydst;
     btScalar m_raylambda;
+    btConvexShape *m_convexShape;
 
 public:
 
-    PhyCharacterAction (PhyCharacter *pc) :
+    PhyCharacterAction (PhyCharacter *pc, btConvexShape *shape) :
         m_pc (pc),
         m_raysrc (0.0, 0.0, 1.0),
         m_raydst (0.0, 0.0, 0.0),
-        m_raylambda (1.0) {}
+        m_raylambda (1.0),
+        m_convexShape (shape) {}
 
     virtual void debugDraw (btIDebugDraw *debugDrawer) {}
 
     virtual void updateAction (btCollisionWorld *world, btScalar dt) {
+        onGroundStep (world, dt);
+        sweepTestStep (world, dt);
+        setImpulses (world, dt);
+    }
+
+    // bugs:
+    // - on ground is sometimes true even though we are not touching anything
+    // - on ground is sometimes false but in fact we are just on a slope
+    void onGroundStep (btCollisionWorld *world, btScalar dt) {
         btTransform xform;
         btRigidBody *body = (btRigidBody*)m_pc->phy->body;
         body->getMotionState()->getWorldTransform (xform);
@@ -1906,7 +1916,6 @@ public:
         down.normalize ();
 
         m_raysrc = xform.getOrigin();
-        // ???
         m_raydst = m_raysrc + down * height * btScalar (1.1);
 
         class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback
@@ -1939,12 +1948,100 @@ public:
 
         m_pc->on_ground = m_raylambda < 1.0;
     }
+
+    void setImpulses (btCollisionWorld *world, btScalar dt) {
+        SCE_TVector3 target, vel;
+        btRigidBody *body = (btRigidBody*)m_pc->phy->body;
+
+        SCE_Vector3_Copy (target, m_pc->target_vel);
+        Phy_GetLinearVelocityRelv (m_pc->phy, vel);
+
+        // avoid sliding when standing on a slope
+        if (SCE_Vector3_IsZero (target) && m_pc->on_ground &&
+            (SCE_Math_IsZero (vel[2]) || (vel[2] < 0.0 && vel[2] > -0.02))
+            /* && m_pc->slope_angle < m_pc->max_slope && !m_pc->slide */) {
+            body->setGravity (btVector3 (0.0, 0.0, 0.0));
+        } else {
+            body->setGravity (btVector3 (0.0, 0.0, -9.8));
+        }
+
+        if (m_pc->on_ground) {
+            float force;
+            SCE_TVector3 final, v;
+
+            force = 30.0;           // max impulse per second
+
+            // TODO: vel = vel - m_pc->ground->vel;
+
+            Phy_Activate (m_pc->phy, SCE_TRUE);
+#if 1
+            if (SCE_Math_IsZero (target[2]))
+                vel[2] = 0.0;
+#endif
+            SCE_Vector3_Operator2v (final, =, target, -, vel);
+            if (SCE_Vector2_Length (final) > force * dt) {
+                SCE_Vector2_Normalize (final);
+                SCE_Vector2_Operator1 (final, *=, force * dt);
+            }
+            Phy_SetLinearImpulseRelv (m_pc->phy, final);
+        }
+    }
+
+    void sweepTestStep (btCollisionWorld *world, btScalar dt) {
+
+        class ClosestNotMeConvexResultCallback :
+            public btCollisionWorld::ClosestConvexResultCallback {
+        protected:
+            btCollisionObject* m_me;
+        public:
+            ClosestNotMeConvexResultCallback (btCollisionObject* me) :
+                btCollisionWorld::ClosestConvexResultCallback(btVector3(0.0, 0.0, 0.0), btVector3(0.0, 0.0, 0.0)),
+                m_me (me) {}
+
+            virtual btScalar addSingleResult (btCollisionWorld::LocalConvexResult &convexResult, bool nws) {
+                if (convexResult.m_hitCollisionObject == m_me)
+                    return btScalar(1.0);
+                return ClosestConvexResultCallback::addSingleResult (convexResult, nws);
+            }
+        };
+
+        btTransform start, end;
+        btVector3 currentVelocity, currentPosition, targetPosition;
+        btRigidBody *body = (btRigidBody*)m_pc->phy->body;
+
+        // now let's have some nice sweep tests and adapt velocity to avoid tunneling
+
+        body->getMotionState()->getWorldTransform (start);
+        currentPosition = start.getOrigin ();
+        currentVelocity = body->getLinearVelocity ();
+        // for some reason, *3 gives better results
+        // (prevents slight bouncing effect from restitution)
+        targetPosition = currentPosition + currentVelocity * dt * 3.0;
+
+        end = start;
+        end.setOrigin (targetPosition);
+        // TODO: we might want to account for targetRotation too
+
+        ClosestNotMeConvexResultCallback callback (body);
+        callback.m_collisionFilterGroup = body->getBroadphaseHandle()->m_collisionFilterGroup;
+        callback.m_collisionFilterMask = body->getBroadphaseHandle()->m_collisionFilterMask;
+
+        world->convexSweepTest (m_convexShape, start, end, callback,
+                                world->getDispatchInfo().m_allowedCcdPenetration);
+
+        if (callback.hasHit ()) {
+            // change velocity so that body wont get past the colliding
+            // object on next simulation step
+            body->setLinearVelocity (currentVelocity * callback.m_closestHitFraction);
+        }
+    }
 };
 
 
 static void Phy_InitCharacter (PhyCharacter *pc)
 {
     pc->phy = NULL;
+    SCE_Vector3_Set (pc->target_vel, 0.0, 0.0, 0.0);
     pc->action = NULL;
     pc->radius = 1.0;
     pc->height = 1.0;
@@ -1963,7 +2060,6 @@ static void Phy_ClearCharacter (PhyCharacter *pc)
 PhyCharacter* Phy_NewCharacter (void)
 {
     PhyCharacter *pc = NULL;
-    PhyCharacterAction *action = NULL;
 
     if (!(pc = (PhyCharacter*)SCE_malloc (sizeof *pc)))
         goto fail;
@@ -1973,13 +2069,6 @@ PhyCharacter* Phy_NewCharacter (void)
 
     // setup default parameters
     Phy_SetMass (pc->phy, 1.0);
-    Phy_SetFriction (pc->phy, 4.0);
-
-    if (!(action = new PhyCharacterAction (pc))) {
-        cppallocfail;
-        goto fail;
-    }
-    pc->action = action;
 
     return pc;
 fail:
@@ -1999,9 +2088,17 @@ void Phy_SetCharacterDimensions (PhyCharacter *pc, float r, float h)
     pc->radius = r;
     pc->height = h;
 }
-Physics* Phy_GetCharacterPhysics (PhyCharacter *pc)
+void Phy_SetCharacterPosition (PhyCharacter *pc, float x, float y, float z)
 {
-    return pc->phy;
+    Phy_SetPosition (pc->phy, x, y, z);
+}
+void Phy_SetCharacterPositionv (PhyCharacter *pc, const SCE_TVector3 pos)
+{
+    Phy_SetPositionv (pc->phy, pos);
+}
+void Phy_GetCharacterPos (PhyCharacter *pc, Position *pos)
+{
+    Phy_GetPos (pc->phy, pos);
 }
 
 // it builds character haha!
@@ -2010,6 +2107,7 @@ int Phy_BuildCharacter (PhyCharacter *pc)
     PhysicsShape *shape = NULL;
     PhysicsShapes *shapes = NULL;
     btRigidBody *body = NULL;
+    PhyCharacterAction *action = NULL;
 
     if (!(shape = Phy_NewCapsuleShape (pc->radius, pc->height)))
         goto fail;
@@ -2023,6 +2121,17 @@ int Phy_BuildCharacter (PhyCharacter *pc)
     body = (btRigidBody*)pc->phy->body;
     body->setSleepingThresholds (0.0, 0.0);
     body->setAngularFactor (0.0);
+#if 0
+    body->setCcdMotionThreshold (0.001); // mouhahaha
+    body->setCcdSweptSphereRadius (pc->height / 2.0 + pc->radius);
+#endif
+
+    // we swears it's a convex shape precious.
+    if (!(action = new PhyCharacterAction (pc, (btConvexShape*)shape->shape))) {
+        cppallocfail;
+        goto fail;
+    }
+    pc->action = action;
 
     return SCE_OK;
 fail:
@@ -2051,23 +2160,7 @@ void Phy_SetCharacterVelocity (PhyCharacter *pc, float x, float y, float z)
 }
 void Phy_SetCharacterVelocityv (PhyCharacter *pc, const SCE_TVector3 v)
 {
-    // TODO: dont apply velocity if character doesnt touch the ground
-    SCE_TVector3 vel, desired;
-
-    if (!pc->on_ground)
-        return;
-
-    SCE_Vector3_Copy (desired, v);
-    Phy_GetLinearVelocityRelv (pc->phy, vel);
-
-    if (!SCE_Vector3_IsZero (desired)) {
-        SCE_TVector3 final;
-        Phy_Activate (pc->phy, SCE_TRUE);
-        if (SCE_Math_IsZero (desired[2]))
-            vel[2] = 0.0;
-        SCE_Vector3_Operator2v (final, =, desired, -, vel);
-        Phy_SetLinearImpulseRelv (pc->phy, final);
-    }
+    SCE_Vector3_Copy (pc->target_vel, v);
 }
 
 int Phy_IsCharacterOnGround (const PhyCharacter *pc)

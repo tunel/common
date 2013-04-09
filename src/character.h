@@ -56,7 +56,7 @@ void Char_SetPositionv (Character*, const SCE_TVector3);
 
 int Char_Build (Character*);
 
-Physics* Char_GetPhysics (Character*);
+void Char_GetPos (Character*, Position*);
 PhyCharacter* Char_GetPhyCharacter (Character*);
 
 void Char_SetRotation (Character*, float);

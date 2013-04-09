@@ -89,33 +89,26 @@ void Char_SetFriction (Character *ch, float friction)
 }
 void Char_SetPosition (Character *ch, float x, float y, float z)
 {
-    Phy_SetPosition (Char_GetPhysics (ch), x, y, z);
+    Phy_SetCharacterPosition (ch->pc, x, y, z);
 }
 void Char_SetPositionv (Character *ch, const SCE_TVector3 v)
 {
-    Phy_SetPositionv (Char_GetPhysics (ch), v);
+    Phy_SetCharacterPositionv (ch->pc, v);
 }
 
 int Char_Build (Character *ch)
 {
-    Physics *phy = NULL;
-
-    phy = Phy_GetCharacterPhysics (ch->pc);
-    Phy_SetMass (phy, ch->mass);
-    Phy_SetFriction (phy, ch->friction);
-
     if (Phy_BuildCharacter (ch->pc) < 0)
         goto fail;
-
     return SCE_OK;
 fail:
     SCEE_LogSrc ();
     return SCE_ERROR;
 }
 
-Physics* Char_GetPhysics (Character *ch)
+void Char_GetPos (Character *ch, Position *pos)
 {
-    return Phy_GetCharacterPhysics (ch->pc);
+    Phy_GetCharacterPos (ch->pc, pos);
 }
 PhyCharacter* Char_GetPhyCharacter (Character *ch)
 {

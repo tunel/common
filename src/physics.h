@@ -143,6 +143,7 @@ struct physics {
 typedef struct phycharacter PhyCharacter;
 struct phycharacter {
     Physics *phy;
+    SCE_TVector3 target_vel;
     void *action;
     float radius;
     float height;
@@ -335,7 +336,9 @@ PhyCharacter* Phy_NewCharacter (void);
 void Phy_FreeCharacter (PhyCharacter*);
 
 void Phy_SetCharacterDimensions (PhyCharacter*, float, float);
-Physics* Phy_GetCharacterPhysics (PhyCharacter*);
+void Phy_SetCharacterPosition (PhyCharacter*, float, float, float);
+void Phy_SetCharacterPositionv (PhyCharacter*, const SCE_TVector3);
+void Phy_GetCharacterPos (PhyCharacter*, Position*);
 
 int Phy_BuildCharacter (PhyCharacter*);
 
