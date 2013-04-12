@@ -45,6 +45,7 @@ static int vworld_seed (SCE_SVoxelWorld *vw, SCEuint level, long min_altitude,
         first = SCE_FALSE;
         for (i = bdepth - 1; i >= 0; i--) {
             if (buf[i] > 127) {
+                /* TODO: interpolate buf[i] and buf[i + 1] */
                 z += i;
                 loop = SCE_FALSE;
                 break;
@@ -71,7 +72,7 @@ static float myrand (float min, float max)
 static void generatecloud (SCE_SVoxelGrid *grid, SCE_TVector3 *points,
                            size_t n_points, float coef)
 {
-    size_t i;
+    size_t i, n;
     float w, h, d;
 
     w = SCE_VGrid_GetWidth (grid);
@@ -84,10 +85,10 @@ static void generatecloud (SCE_SVoxelGrid *grid, SCE_TVector3 *points,
         float depth;
 
         if (myrand (0.0, 100.0) > 60.0)
-            depth = myrand (d * 0.7, d - 1.0);
+            depth = myrand (d * 0.7, d);
         else
             depth = myrand (d * 0.2, d * 0.7);
-        SCE_Vector3_Set (p, myrand (0.0, w - 1.0), myrand (0.0, h - 1.0),
+        SCE_Vector3_Set (p, myrand (0.0, w), myrand (0.0, h),
                          depth);
         /* TODO: hardcoded usage of voxel data */
         if (*SCE_VGrid_Offset (grid, p[0], p[1], p[2]) <= 40) {
@@ -99,9 +100,9 @@ static void generatecloud (SCE_SVoxelGrid *grid, SCE_TVector3 *points,
         }
     }
     /* set a few points for the trunk (which btw can cross terrain but whatever) */
-    /* TODO: n_points is _probably_ higher than 5 */
-    for (i = 1; i < 5; i++)
-        SCE_Vector3_Set (points[i - 1], 0.0, 0.0, i * ((d * 0.2) / 5.0));
+    n = MIN (10, n_points);
+    for (i = 1; i < n; i++)
+        SCE_Vector3_Set (points[i - 1], 0.0, 0.0, i * ((d * 0.2) / n));
 }
 
 static int generatetree (SCE_SVoxelWorld *vw, SCEuint level,
@@ -139,6 +140,7 @@ static int generatetree (SCE_SVoxelWorld *vw, SCEuint level,
         coef *= 2.0;
     generatecloud (&grid, points, n_points, coef);
     SCE_free (voxels);
+    voxels = NULL;
 
     SCE_Vector3_Set (origin, 0.0, 0.0, 0.0);
     if (SCE_FTree_SpaceColonization (ft, param, origin, points, n_points) < 0)
@@ -180,18 +182,28 @@ int TGen_Generate (SCE_SVoxelWorld *vw, SCEuint level, SCE_TVector3 origin,
                    float size, float height, float vunit, SCE_SForestTree *ft)
 {
     SCE_SLongRect3 r;
+    SCE_SFloatRect3 fr;
     SCE_SForestTreeParameters param;
-    size_t n_points = 1000;
     SCEuint l;
+    size_t n_points;
+    float inv_vunit = 1.0 / vunit;
 
     SCE_Rectangle3_Setl (&r, -size / 2.0, -size / 2.0, 0.0,
                               size / 2.0,  size / 2.0, height);
+    /* hax */
+    SCE_Rectangle3_FloatFromLong (&fr, &r);
+    SCE_Rectangle3_Mulf (&fr, inv_vunit, inv_vunit, inv_vunit);
+    SCE_Rectangle3_LongFromFloat (&r, &fr);
+    l = level;
+    while (l--)
+        SCE_Rectangle3_Divl (&r, 2, 2, 2);
+    n_points = SCE_Rectangle3_GetAreal (&r) / 100;
 
 #define cub(a) ((a)*(a))
     param.grow_dist = 1.3;
     param.kill_dist = cub(1.0);
     param.radius = cub(10.0);
-    param.max_nodes = 800;
+    param.max_nodes = 800; /* TODO: make it depends on some region area */
 
     l = level;
     SCE_Vector3_Operator1 (origin, /=, vunit);
