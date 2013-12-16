@@ -19,7 +19,8 @@ libtlcommon_la_SOURCES  = socket.c \
                           treegenerator.c
 
 
-tl_include_common_HEADERS = socket.h \
+tlcommon_includedir = $(includedir)/tunel/common
+tlcommon_include_HEADERS  = socket.h \
                             ptimer.h \
                             netclient.h \
                             netprotocol.h \

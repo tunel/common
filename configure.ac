@@ -42,13 +42,6 @@ AC_PROG_CXX
 TL_COMMON_LTVERSION="0:0:0"
 AC_SUBST([TL_COMMON_LTVERSION])
 
-pkgconfigdir="$libdir/pkgconfig"
-tl_includedir="$includedir/tunel"
-tl_include_commondir="$tl_includedir/common"
-AC_SUBST(pkgconfigdir)
-AC_SUBST(tl_includedir)
-AC_SUBST(tl_include_commondir)
-
 # Checks for libraries.
 
 # AX_REQUIRE_HEADER(HEADER, IF-PRESENT)
